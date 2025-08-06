@@ -28,8 +28,6 @@ Built with [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter) for a
 |----------------------------------------|----------------------------------------|
 | ![main-ui](screenshots/main-ui.png)    | ![popup-ui](screenshots/popup-ui.png) |
 
-> *(You can take your own screenshots and save them in a `screenshots/` folder.)*
-
 ---
 
 ## 📦 Requirements
