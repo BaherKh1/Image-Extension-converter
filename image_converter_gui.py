@@ -10,13 +10,10 @@ import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from PIL import Image, UnidentifiedImageError
 
-# Appearance
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("blue")
 
-# Supported input extensions (lowercase)
 SUPPORTED_EXTS = {'.jpg', '.jpeg', '.png', '.bmp', '.gif', '.tiff', '.webp'}
-
 
 class ImageConverterApp(ctk.CTk):
     def __init__(self):
@@ -25,7 +22,6 @@ class ImageConverterApp(ctk.CTk):
         self.geometry("760x420")
         self.resizable(False, False)
 
-        # State
         self.input_folder = ""
         self.output_folder = ""
         self.output_format = ctk.StringVar(value="jpg")
@@ -33,7 +29,6 @@ class ImageConverterApp(ctk.CTk):
         self.recursive = ctk.BooleanVar(value=False)
         self.num_workers = ctk.IntVar(value=6)
 
-        # Progress counters
         self._lock = threading.Lock()
         self._total_files = 0
         self._processed = 0
@@ -51,7 +46,6 @@ class ImageConverterApp(ctk.CTk):
         frame = ctk.CTkFrame(self)
         frame.pack(padx=pad, pady=(8, 12), fill="x")
 
-        # Input folder
         in_row = ctk.CTkFrame(frame)
         in_row.pack(fill="x", padx=10, pady=8)
         ctk.CTkLabel(in_row, text="Input folder:", width=110, anchor="w").pack(side="left", padx=(0,8))
@@ -59,7 +53,6 @@ class ImageConverterApp(ctk.CTk):
         self.in_path_entry.pack(side="left", expand=True, fill="x", padx=(0,8))
         ctk.CTkButton(in_row, text="Browse", width=90, command=self.select_input_folder).pack(side="left")
 
-        # Output folder
         out_row = ctk.CTkFrame(frame)
         out_row.pack(fill="x", padx=10, pady=8)
         ctk.CTkLabel(out_row, text="Output folder:", width=110, anchor="w").pack(side="left", padx=(0,8))
@@ -67,11 +60,9 @@ class ImageConverterApp(ctk.CTk):
         self.out_path_entry.pack(side="left", expand=True, fill="x", padx=(0,8))
         ctk.CTkButton(out_row, text="Browse", width=90, command=self.select_output_folder).pack(side="left")
 
-        # Options row
         opts = ctk.CTkFrame(frame)
         opts.pack(fill="x", padx=10, pady=8)
 
-        # Format and workers
         left_opts = ctk.CTkFrame(opts)
         left_opts.pack(side="left", padx=(0,16))
         ctk.CTkLabel(left_opts, text="Output format:", anchor="w").pack(anchor="w")
@@ -92,7 +83,6 @@ class ImageConverterApp(ctk.CTk):
         ctk.CTkCheckBox(right_opts, text="Overwrite existing files", variable=self.overwrite).pack(anchor="w", pady=4)
         ctk.CTkCheckBox(right_opts, text="Recursive (include subfolders)", variable=self.recursive).pack(anchor="w", pady=4)
 
-        # Action frame
         action = ctk.CTkFrame(self)
         action.pack(fill="x", padx=pad, pady=(6,12))
 
@@ -102,7 +92,6 @@ class ImageConverterApp(ctk.CTk):
         self.progress = ctk.CTkProgressBar(action, width=520)
         self.progress.pack(side="left", padx=(6,20), fill="x", expand=True)
 
-        # Status box
         status_frame = ctk.CTkFrame(self)
         status_frame.pack(fill="both", padx=pad, pady=(0,12), expand=True)
         self.status_label = ctk.CTkLabel(status_frame, text="Ready", anchor="w")
@@ -142,7 +131,6 @@ class ImageConverterApp(ctk.CTk):
         else:
             self.output_folder = ""
 
-        # Reset counters
         with self._lock:
             self._total_files = 0
             self._processed = 0
@@ -150,18 +138,16 @@ class ImageConverterApp(ctk.CTk):
             self._skipped = 0
             self._errors = 0
 
-        # Disable UI controls while running
         self.convert_btn.configure(state="disabled")
         self.workers_spin.configure(state="disabled")
         self.progress.set(0)
         self._log("Counting files...")
 
-        # Start background thread to collect files then run executor
         bg = threading.Thread(target=self._prepare_and_run, args=(in_path,), daemon=True)
         bg.start()
 
     def _prepare_and_run(self, in_path):
-        # Build file list
+
         files = []
         if self.recursive.get():
             for root, dirs, filenames in os.walk(in_path):
@@ -184,16 +170,14 @@ class ImageConverterApp(ctk.CTk):
 
         self._log(f"Found {total} images. Using {self.num_workers.get()} workers. Starting...")
 
-        # Use ThreadPoolExecutor to convert in parallel
         max_workers = max(1, int(self.num_workers.get()))
         futures = []
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             for fpath in files:
                 futures.append(executor.submit(self._process_single_image, fpath, in_path))
 
-            # Iterate as they complete to update progress in near-real-time
             for future in as_completed(futures):
-                # We handle counts inside _process_single_image with lock; here just update UI
+
                 with self._lock:
                     self._processed += 1
                     processed = self._processed
@@ -213,14 +197,14 @@ class ImageConverterApp(ctk.CTk):
         """
         Convert one image file to desired format. Runs in worker threads.
         """
-        out_fmt = self.output_format.get().lower()  # 'jpg' or 'png'
+        out_fmt = self.output_format.get().lower()  
         try:
-            # Determine new path
+
             base_name = os.path.splitext(os.path.basename(file_path))[0]
             new_name = base_name + "." + out_fmt
 
             if self.output_folder:
-                # preserve relative path if recursive
+
                 if self.recursive.get():
                     rel = os.path.relpath(os.path.dirname(file_path), input_root)
                     target_dir = os.path.join(self.output_folder, rel)
@@ -232,16 +216,14 @@ class ImageConverterApp(ctk.CTk):
             os.makedirs(target_dir, exist_ok=True)
             new_path = os.path.join(target_dir, new_name)
 
-            # Quick skip: if target exists and we don't want to overwrite
             if os.path.exists(new_path) and not self.overwrite.get():
                 with self._lock:
                     self._skipped += 1
                 self._log(f"Skipped (exists): {new_path}")
                 return
 
-            # Open and check format & mode
             with Image.open(file_path) as img:
-                # If already in desired format and not overwrite, skip
+
                 src_format = img.format.lower() if img.format else ""
                 if src_format == out_fmt and not self.overwrite.get():
                     with self._lock:
@@ -249,21 +231,18 @@ class ImageConverterApp(ctk.CTk):
                     self._log(f"Skipped (already {out_fmt}): {file_path}")
                     return
 
-                # Optimize steps for speed:
-                # - Avoid unnecessary convert() when possible
-                # - Do not use optimize=True (slower); set reasonable JPG quality
                 if out_fmt == "jpg":
-                    # JPEG requires RGB
+
                     if img.mode != "RGB":
                         try:
                             img = img.convert("RGB")
                         except Exception:
-                            # fallback: create new RGB image
+
                             img = img.convert("RGB")
                     save_kwargs = {"format": "JPEG", "quality": 100, "optimize": False}
                     img.save(new_path, **save_kwargs)
-                else:  # png
-                    # PNG can store many modes; save directly without optimize
+                else:  
+
                     save_kwargs = {"format": "PNG"}
                     img.save(new_path, **save_kwargs)
 
@@ -281,11 +260,11 @@ class ImageConverterApp(ctk.CTk):
             self._log(f"Error converting {file_path}: {e}")
 
     def _update_status(self, text):
-        # Called from main background thread; schedule on the GUI thread
+
         self.after(0, lambda: self.status_label.configure(text=text))
 
     def _log(self, text):
-        # Append log text in GUI thread
+
         self.after(0, lambda: self._append_log(text))
 
     def _append_log(self, text):
@@ -294,19 +273,17 @@ class ImageConverterApp(ctk.CTk):
         self.log_text.see("end")
         self.log_text.configure(state="disabled")
     def _done(self, text):
-        # Re-enable UI controls
+
         self.after(0, lambda: self.convert_btn.configure(state="normal"))
         self.after(0, lambda: self.workers_spin.configure(state="normal"))
         self.after(0, lambda: self.status_label.configure(text=text))
 
-        # Show custom styled popup
         def show_popup():
             popup = ctk.CTkToplevel(self)
             popup.title("Conversion Finished")
             popup.geometry("360x130")
             popup.resizable(False, False)
 
-            # Center the popup over the main window
             self_x = self.winfo_x()
             self_y = self.winfo_y()
             popup.geometry(f"+{self_x + 200}+{self_y + 150}")
@@ -328,11 +305,10 @@ class ImageConverterApp(ctk.CTk):
             )
             close_btn.pack(pady=(10, 20))
 
-            popup.transient(self)  # keep on top of main window
-            popup.grab_set()       # make modal
+            popup.transient(self)  
+            popup.grab_set()       
 
         self.after(0, show_popup)
-
 
 if __name__ == "__main__":
     app = ImageConverterApp()
