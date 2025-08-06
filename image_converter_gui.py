@@ -260,7 +260,7 @@ class ImageConverterApp(ctk.CTk):
                         except Exception:
                             # fallback: create new RGB image
                             img = img.convert("RGB")
-                    save_kwargs = {"format": "JPEG", "quality": 90, "optimize": False}
+                    save_kwargs = {"format": "JPEG", "quality": 100, "optimize": False}
                     img.save(new_path, **save_kwargs)
                 else:  # png
                     # PNG can store many modes; save directly without optimize
