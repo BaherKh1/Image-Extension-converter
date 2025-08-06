@@ -2,7 +2,7 @@
 
 A modern Python GUI application that converts all images in a selected folder to `.jpg` or `.png` format — fast and in parallel.
 
-Built with [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter) for a modern user interface and [Pillow]([https://python-pillow.org](https://pypi.org/project/pillow/)) for image processing.
+Built with [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter) for a modern user interface and [Pillow](https://python-pillow.org](https://pypi.org/project/pillow/) for image processing.
 
 ---
 
